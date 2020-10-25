@@ -10,10 +10,9 @@ from config import Config
 
 
 class Model(nn.Module):
-    def __init__(self, output):
+    def __init__(self, image_size, output):
         super(Model, self).__init__()
-        size = 256
-        n = ((size - 4) // 2 - 4) // 2
+        n = ((image_size - 4) // 2 - 4) // 2
 
         self.conv1 = nn.Conv2d(1, 16, 5)
         self.relu1 = nn.ReLU()
@@ -54,11 +53,25 @@ class Model(nn.Module):
         return x
 
 
+def double_range(a1, a2, chunk = 100):
+    records = []
+
+    for x1 in a1:
+        for x2 in a2:
+            records.append((x1, x2))
+            if len(records) >= chunk:
+                yield records
+                records = []
+
+    if len(records) > 0:
+        yield records
+
+
 def main():
     index = read_index()
     number_of_image = index["number"]
 
-    model = Model(number_of_image)
+    model = Model(Config.image_size, number_of_image)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr = 0.001)
 
@@ -67,21 +80,27 @@ def main():
 
     if torch.cuda.is_available():
         device = torch.device("cuda")
+        model.cuda()
     else:
         device = torch.device("cpu")
 
     n_epoch = 2
+    image_chunk = 100
 
     model.train()
 
     for i_epoch in range(n_epoch):
-        for i_image in i_image_list[:3]:
+        count = 0
+        for double_list in double_range(i_image_list[:-5], range(len(index["characters"])), chunk = image_chunk):
             inputs = []
             labels = []
 
-            for i_entity, entity in enumerate(index["characters"]):
+            for i_image, i_entity in double_list:
+                entity = index["characters"][i_entity]
                 inputs.append(read_image(entity["code"], entity["character"], i_image))
                 labels.append(i_entity)
+
+            count += len(labels)
 
             inputs = torch.tensor(inputs).float().to(device)
             labels = torch.tensor(labels).long().to(device)
@@ -92,26 +111,34 @@ def main():
             loss.backward()
             optimizer.step()
 
-            print("i_epoch: {}, i_image: {}, loss: {}".format(i_epoch + 1, i_image, loss.item()))
+            print("epoch: {}, images: {}, loss: {}".format(i_epoch + 1, count, loss.item()))
 
     model.eval()
     
-    inputs = []
-    labels = []
+    correct_count = 0
+    total_count = 0
 
-    for i_image in i_image_list[-5:]:
-        for i_entity, entity in enumerate(index["characters"]):
-            inputs.append(read_image(entity["code"], entity["character"], i_image))
-            labels.append(i_entity)
+    with torch.no_grad():
+        for double_list in double_range(i_image_list[-5:], range(len(index["characters"])), chunk = image_chunk):
+            inputs = []
+            labels = []
 
-    inputs = torch.tensor(inputs).float().to(device)
-    labels = torch.tensor(labels).long().to(device)
+            for i_image, i_entity in double_list:
+                entity = index["characters"][i_entity]
+                inputs.append(read_image(entity["code"], entity["character"], i_image))
+                labels.append(i_entity)
 
-    outputs = model(inputs)
-    _, prediction = torch.max(outputs.data, 1)
-    judge = labels == prediction
+            inputs = torch.tensor(inputs).float().to(device)
+            labels = torch.tensor(labels).long().to(device)
 
-    print("Accuracy: {:.2f}%".format(int(judge.sum()) / len(judge) * 100))
+            outputs = model(inputs)
+            _, prediction = torch.max(outputs.data, 1)
+            judge = labels == prediction
+
+            correct_count += int(judge.sum())
+            total_count += len(judge)
+
+    print("Accuracy: {:.2f}%".format(correct_count / total_count * 100))
 
 
 def read_image(code, character, i_image):
