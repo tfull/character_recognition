@@ -65,6 +65,11 @@ def main():
     i_image_list = list(range(1, number_of_image + 1))
     random.shuffle(i_image_list)
 
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
+
     n_epoch = 2
 
     model.train()
@@ -78,8 +83,8 @@ def main():
                 inputs.append(read_image(entity["code"], entity["character"], i_image))
                 labels.append(i_entity)
 
-            inputs = torch.tensor(inputs).float()
-            labels = torch.tensor(labels).long()
+            inputs = torch.tensor(inputs).float().to(device)
+            labels = torch.tensor(labels).long().to(device)
 
             optimizer.zero_grad()
             outputs = model(inputs)
@@ -99,8 +104,9 @@ def main():
             inputs.append(read_image(entity["code"], entity["character"], i_image))
             labels.append(i_entity)
 
-    inputs = torch.tensor(inputs).float()
-    labels = torch.tensor(labels).long()
+    inputs = torch.tensor(inputs).float().to(device)
+    labels = torch.tensor(labels).long().to(device)
+
     outputs = model(inputs)
     _, prediction = torch.max(outputs.data, 1)
     judge = labels == prediction
