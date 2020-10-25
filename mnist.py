@@ -37,7 +37,6 @@ class Model(nn.Module):
         x = self.dropout2(x)
         x = self.linear2(x)
         x = self.softmax(x)
-
         return x
 
 
@@ -68,8 +67,11 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr = 0.001)
 
+    model.train()
+
     for i_epoch in range(n_epoch):
         for i_batch, (inputs, labels) in enumerate(train_loader):
+            return print(inputs)
             optimizer.zero_grad()
             outputs = model(inputs)
             loss = criterion(outputs, labels)
@@ -81,6 +83,8 @@ def main():
     correct_count = 0
     record_count = 0
 
+    model.eval()
+
     with torch.no_grad():
         for inputs, labels in test_loader:
             outputs = model(inputs)
@@ -89,7 +93,7 @@ def main():
             correct_count += int(judge.sum())
             record_count += len(judge)
 
-    print("Accuracy: {:.2f}".format(correct_count / record_count * 100))
+    print("Accuracy: {:.2f}%".format(correct_count / record_count * 100))
 
 
 if __name__ == '__main__':
