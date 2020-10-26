@@ -29,7 +29,7 @@ def make(indices, index_data):
             directory = "{0}/{1}_{2}".format(Config.data_directory, i_character, character)
             os.makedirs(directory, exist_ok = True)
             index_data["characters"].append({ "code": i_character, "character": character })
-            count = 1
+            count = 0
 
             for pointsize in range(120, 248 + 1, 8):
                 ds = (Config.image_size - pointsize) // 2
@@ -39,9 +39,9 @@ def make(indices, index_data):
                 for dx in dr_list:
                     for dy in dr_list:
                         for r in [-8, -4, 0, 4, 8]:
+                            count += 1
                             path = "{}/{}_{}.png".format(directory, character, count)
                             generate(path, font, pointsize, character, r, dx, dy)
-                            count += 1
 
             index_data["number"] = count
 

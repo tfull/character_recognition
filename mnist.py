@@ -71,7 +71,6 @@ def main():
 
     for i_epoch in range(n_epoch):
         for i_batch, (inputs, labels) in enumerate(train_loader):
-            return print(inputs)
             optimizer.zero_grad()
             outputs = model(inputs)
             loss = criterion(outputs, labels)

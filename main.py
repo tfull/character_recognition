@@ -14,20 +14,24 @@ class Model(nn.Module):
         super(Model, self).__init__()
         n = ((image_size - 4) // 2 - 4) // 2
 
-        self.conv1 = nn.Conv2d(1, 16, 5)
+        self.conv1 = nn.Conv2d(1, 4, 5)
         self.relu1 = nn.ReLU()
+        self.normal1 = nn.BatchNorm2d(4)
         self.pool1 = nn.MaxPool2d(2, 2)
         self.dropout1 = nn.Dropout2d(0.3)
-        self.conv2 = nn.Conv2d(16, 64, 5)
+        self.conv2 = nn.Conv2d(4, 16, 5)
         self.relu2 = nn.ReLU()
+        self.normal2 = nn.BatchNorm2d(16)
         self.pool2 = nn.MaxPool2d(2, 2)
         self.dropout2 = nn.Dropout2d(0.3)
         self.flatten = nn.Flatten()
-        self.linear1 = nn.Linear(n * n * 64, 1024)
+        self.linear1 = nn.Linear(n * n * 16, 1024)
         self.relu3 = nn.ReLU()
+        self.normal3 = nn.BatchNorm1d(1024)
         self.dropout3 = nn.Dropout(0.3)
         self.linear2 = nn.Linear(1024, 256)
         self.relu4 = nn.ReLU()
+        self.normal4 = nn.BatchNorm1d(256)
         self.dropout4 = nn.Dropout(0.3)
         self.linear3 = nn.Linear(256, output)
         self.softmax = nn.Softmax(dim = 1)
@@ -35,18 +39,22 @@ class Model(nn.Module):
     def forward(self, x):
         x = self.conv1(x)
         x = self.relu1(x)
+        x = self.normal1(x)
         x = self.pool1(x)
         x = self.dropout1(x)
         x = self.conv2(x)
         x = self.relu2(x)
+        x = self.normal2(x)
         x = self.pool2(x)
         x = self.dropout2(x)
         x = self.flatten(x)
         x = self.linear1(x)
         x = self.relu3(x)
+        x = self.normal3(x)
         x = self.dropout3(x)
         x = self.linear2(x)
         x = self.relu4(x)
+        x = self.normal4(x)
         x = self.dropout4(x)
         x = self.linear3(x)
         x = self.softmax(x)
@@ -150,7 +158,7 @@ def read_image(code, character, i_image):
 
     image = Image.open(path_image).convert("L")
 
-    return np.array(image).reshape(1, Config.image_size, Config.image_size)
+    return np.array(image).reshape(1, Config.image_size, Config.image_size) / 255
 
 
 def read_index():
