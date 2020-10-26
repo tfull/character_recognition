@@ -2,6 +2,7 @@ import os
 import subprocess
 import yaml
 
+import _pre
 from config import Config
 
 

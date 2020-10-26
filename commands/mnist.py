@@ -5,7 +5,8 @@ import torch.nn.functional as func
 import torchvision
 import torch.optim as optim
 
-from config import Config
+import _pre
+from src.config import Config
 
 
 class Model(nn.Module):
