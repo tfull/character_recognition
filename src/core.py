@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.optim as optim
 import sys
 
-from config import Config
+from .config import Config
 
 
 class Model(nn.Module):
@@ -169,7 +169,7 @@ def get_device(model):
         return torch.device("cpu")
 
 
-def main():
+def experiment():
     index = read_index()
     number_of_image = index["number"]
 
