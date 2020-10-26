@@ -5,6 +5,7 @@ import yaml
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import sys
 
 from config import Config
 
@@ -75,22 +76,9 @@ def double_range(a1, a2, chunk = 100):
         yield records
 
 
-def main():
-    index = read_index()
-    number_of_image = index["number"]
-
-    model = Model(Config.image_size, number_of_image)
+def train(index, model, device, i_image_list, model_path = None):
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr = 0.001)
-
-    i_image_list = list(range(1, number_of_image + 1))
-    random.shuffle(i_image_list)
-
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-        model.cuda()
-    else:
-        device = torch.device("cpu")
 
     n_epoch = 2
     image_chunk = 100
@@ -99,7 +87,7 @@ def main():
 
     for i_epoch in range(n_epoch):
         count = 0
-        for double_list in double_range(i_image_list[:-5], range(len(index["characters"])), chunk = image_chunk):
+        for double_list in double_range(i_image_list, range(len(index["characters"])), chunk = image_chunk):
             inputs = []
             labels = []
 
@@ -119,15 +107,22 @@ def main():
             loss.backward()
             optimizer.step()
 
-            print("epoch: {}, images: {}, loss: {}".format(i_epoch + 1, count, loss.item()))
+            sys.stderr.write("epoch: {}, images: {}, loss: {}\n".format(i_epoch + 1, count, loss.item()))
 
+    if model_path is not None:
+        torch.save(model.to("cpu").state_dict(), model_path)
+
+
+def test(index, model, device, i_image_list):
     model.eval()
-    
+
+    image_chunk = 100
+
     correct_count = 0
     total_count = 0
 
     with torch.no_grad():
-        for double_list in double_range(i_image_list[-5:], range(len(index["characters"])), chunk = image_chunk):
+        for double_list in double_range(i_image_list, range(len(index["characters"])), chunk = image_chunk):
             inputs = []
             labels = []
 
@@ -163,7 +158,42 @@ def read_image(code, character, i_image):
 
 def read_index():
     with open(Config.data_directory + "/index.yml") as f:
-        return yaml.load(f, Loader=yaml.SafeLoader)
+        return yaml.load(f, Loader = yaml.SafeLoader)
+
+
+def get_device(model):
+    if torch.cuda.is_available():
+        model.cuda()
+        return torch.device("cuda")
+    else:
+        return torch.device("cpu")
+
+
+def main():
+    index = read_index()
+    number_of_image = index["number"]
+
+    model = Model(Config.image_size, number_of_image)
+    device = get_device(model)
+
+    i_image_list = list(range(1, number_of_image + 1))
+    random.shuffle(i_image_list)
+
+    train(index, model, device, i_image_list[:-5])
+    test(index, model, device, i_image_list[-5:])
+
+
+def pretrain():
+    index = read_index()
+    number_of_image = index["number"]
+
+    model = Model(Config.image_size, number_of_image)
+    device = get_device(model)
+
+    i_image_list = list(range(1, number_of_image + 1))
+    random.shuffle(i_image_list)
+
+    train(index, model, device, i_image_list, model_path = Config.data_directory + "/model.h5")
 
 
 if __name__ == '__main__':
