@@ -145,7 +145,8 @@ def test(index, model, device, i_image_list):
 
 
 def read_image(code, character, i_image):
-    path_image = Config.data_directory + "/{code}_{character}/{character}_{i_image}.png".format(
+    path_image = "{home}/images/{code}_{character}/{character}_{i_image}.png".format(
+        home = Config.data_directory,
         code = code,
         character = character,
         i_image = i_image
@@ -179,8 +180,10 @@ def experiment():
     i_image_list = list(range(1, number_of_image + 1))
     random.shuffle(i_image_list)
 
-    train(index, model, device, i_image_list[:-5])
-    test(index, model, device, i_image_list[-5:])
+    n_test = len(i_image_list) // 20
+
+    train(index, model, device, i_image_list[:-n_test])
+    test(index, model, device, i_image_list[-n_test:])
 
 
 def pretrain():
@@ -193,7 +196,7 @@ def pretrain():
     i_image_list = list(range(1, number_of_image + 1))
     random.shuffle(i_image_list)
 
-    train(index, model, device, i_image_list, model_path = Config.data_directory + "/model.h5")
+    train(index, model, device, i_image_list, model_path = Config.data_directory + "/model.pth")
 
 
 if __name__ == '__main__':

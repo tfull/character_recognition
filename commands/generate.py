@@ -1,13 +1,16 @@
 import os
 import subprocess
 import yaml
+import sys
 
 import _pre
-from config import Config
+from src.config import Config
 
 
 font_list = [
-    "Noto-Sans-CJK-JP-Thin"
+    "Noto-Sans-CJK-JP-Thin",
+    "Noto-Sans-CJK-JP-Medium",
+    "Noto-Serif-CJK-JP"
 ]
 
 
@@ -24,27 +27,31 @@ def main():
 
 
 def make(indices, index_data):
-    for font in font_list:
-        for i_character in indices:
-            character = chr(i_character)
-            directory = "{0}/{1}_{2}".format(Config.data_directory, i_character, character)
-            os.makedirs(directory, exist_ok = True)
-            index_data["characters"].append({ "code": i_character, "character": character })
-            count = 0
+    for i_character in indices:
+        character = chr(i_character)
+        directory = "{0}/images/{1}_{2}".format(Config.data_directory, i_character, character)
+        os.makedirs(directory, exist_ok = True)
+        index_data["characters"].append({ "code": i_character, "character": character })
+        count = 0
 
-            for pointsize in range(120, 248 + 1, 8):
+        for font in font_list:
+            for pointsize in range(Config.image_size // 2 - 8, Config.image_size - 8 + 1, 8):
                 ds = (Config.image_size - pointsize) // 2
                 dr_list = [0]
-                if ds > 12:
-                    dr_list.extend([-ds // 3, ds // 3])
+                if ds >= 16:
+                    dr_list.extend([-ds // 3, ds // 3, -ds // 2, ds // 2])
                 for dx in dr_list:
                     for dy in dr_list:
-                        for r in [-8, -4, 0, 4, 8]:
+                        for rotation in [0 -4, 4, -8, 8]:
                             count += 1
                             path = "{}/{}_{}.png".format(directory, character, count)
-                            generate(path, font, pointsize, character, r, dx, dy)
+                            sys.stderr.write("\033[2K\033[G{}_{}: {} {} {} {} {}".format(character, count, font, pointsize, rotation, dx, dy))
+                            sys.stderr.flush()
+                            generate(path, font, pointsize, character, rotation, dx, dy)
 
-            index_data["number"] = count
+        index_data["number"] = count
+
+    sys.stderr.write("\033[2K\033[Gcomplete\n")
 
 
 def make_template():
