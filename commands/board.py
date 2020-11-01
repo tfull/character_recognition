@@ -1,7 +1,10 @@
 import tkinter
 from PIL import Image, ImageDraw
+import numpy as np
+import sys
 
 import _pre
+import src.core
 
 
 class Board:
@@ -9,10 +12,10 @@ class Board:
         self.window = tkinter.Tk()
         self.window.title("かな入力")
 
-        self.frame = tkinter.Frame(self.window, width = 1300, height = 300)
+        self.frame = tkinter.Frame(self.window, width = 300, height = 300)
         self.frame.pack()
 
-        self.canvas = tkinter.Canvas(self.frame, bg = "black", width = 1280, height = 256)
+        self.canvas = tkinter.Canvas(self.frame, bg = "black", width = 256, height = 256)
         self.canvas.place(x = 0, y = 0)
 
         self.canvas.bind("<ButtonPress-1>", self.click_left)
@@ -26,11 +29,16 @@ class Board:
         self.label = tkinter.Label(self.frame, bg = "green", fg = "yellow", text = "hello", width = 400, height = 40)
         self.label.place(x = 100, y = 256)
 
-        self.image = Image.new("L", (1280, 256))
+        self.image = Image.new("L", (256, 256))
         self.draw = ImageDraw.Draw(self.image)
+
+        self.recognizer = src.core.Recognizer()
 
     def press_button(self):
         self.image.save("tmp.png")
+        output = self.recognizer.detect(np.array(self.image).reshape(1, 1, 256, 256))
+        sys.stdout.write(output)
+        sys.stdout.flush()
 
     def click_left(self, event):
         ex = event.x
@@ -98,3 +106,4 @@ class Board:
 
 if __name__ == '__main__':
     Board().start()
+    sys.stdout.write("\n")

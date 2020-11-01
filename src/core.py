@@ -62,6 +62,26 @@ class Model(nn.Module):
         return x
 
 
+class Recognizer:
+    def __init__(self):
+        self.index = read_index()
+        n_output = len(self.index["characters"])
+
+        self.model = Model(Config.image_size, n_output)
+        self.model.load_state_dict(torch.load(Config.data_directory + "/model.pth"))
+        self.device = get_device(self.model)
+        self.model.eval()
+
+    def detect(self, array):
+        inputs = torch.tensor(array / 255).float().to(self.device)
+
+        with torch.no_grad():
+            outputs = self.model(inputs)
+            _, prediction = torch.max(outputs.data, 1)
+
+            return self.index["characters"][prediction[0]]["character"]
+
+
 def double_range(a1, a2, chunk = 100):
     records = []
 
@@ -172,9 +192,10 @@ def get_device(model):
 
 def experiment():
     index = read_index()
+    n_output = len(index["characters"])
     number_of_image = index["number"]
 
-    model = Model(Config.image_size, number_of_image)
+    model = Model(Config.image_size, n_output)
     device = get_device(model)
 
     i_image_list = list(range(1, number_of_image + 1))
@@ -188,9 +209,10 @@ def experiment():
 
 def pretrain():
     index = read_index()
+    n_output = len(index["characters"])
     number_of_image = index["number"]
 
-    model = Model(Config.image_size, number_of_image)
+    model = Model(Config.image_size, n_output)
     device = get_device(model)
 
     i_image_list = list(range(1, number_of_image + 1))
