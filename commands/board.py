@@ -5,17 +5,20 @@ import sys
 
 import _pre
 import src.core
+from src.config import Config
 
 
 class Board:
     def __init__(self):
+        self.image_size = Config.image_size
+
         self.window = tkinter.Tk()
         self.window.title("かな入力")
 
-        self.frame = tkinter.Frame(self.window, width = 300, height = 300)
+        self.frame = tkinter.Frame(self.window, width = self.image_size + 2, height = self.image_size + 40)
         self.frame.pack()
 
-        self.canvas = tkinter.Canvas(self.frame, bg = "black", width = 256, height = 256)
+        self.canvas = tkinter.Canvas(self.frame, bg = "black", width = self.image_size, height = self.image_size)
         self.canvas.place(x = 0, y = 0)
 
         self.canvas.bind("<ButtonPress-1>", self.click_left)
@@ -23,22 +26,25 @@ class Board:
         self.canvas.bind("<ButtonPress-3>", self.click_right)
         self.canvas.bind("<B3-Motion>", self.drag_right)
 
-        self.button = tkinter.Button(self.frame, bg = "blue", fg = "yellow", text = "認識", width = 100, height = 40, command = self.press_button)
-        self.button.place(x = 0, y = 256)
+        self.button_detect = tkinter.Button(self.frame, bg = "blue", fg = "white", text = "認識", width = 100, height = 40, command = self.press_detect)
+        self.button_detect.place(x = 0, y = self.image_size)
 
-        self.label = tkinter.Label(self.frame, bg = "green", fg = "yellow", text = "hello", width = 400, height = 40)
-        self.label.place(x = 100, y = 256)
+        self.button_delete = tkinter.Button(self.frame, bg = "green", fg = "white", text = "削除", width = 100, height = 40, command = self.press_delete)
+        self.button_delete.place(x = self.image_size // 2, y = self.image_size)
 
-        self.image = Image.new("L", (256, 256))
+        self.image = Image.new("L", (self.image_size, self.image_size))
         self.draw = ImageDraw.Draw(self.image)
 
         self.recognizer = src.core.Recognizer()
 
-    def press_button(self):
-        self.image.save("tmp.png")
-        output = self.recognizer.detect(np.array(self.image).reshape(1, 1, 256, 256))
+    def press_detect(self):
+        output = self.recognizer.detect(np.array(self.image).reshape(1, 1, self.image_size, self.image_size))
         sys.stdout.write(output)
         sys.stdout.flush()
+
+    def press_delete(self):
+        self.canvas.delete("all")
+        self.draw.rectangle((0, 0, self.image_size, self.image_size), fill = 0)
 
     def click_left(self, event):
         ex = event.x
